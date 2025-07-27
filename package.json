@@ -12,6 +12,8 @@
     "infrastructure": "npm run launch",
     "api": "node src/api/app.js",
     "server": "npm run api",
+    "import-csv": "node scripts/import-csv-knowledge-base.js",
+    "load-data": "npm run import-csv",
     "demo": "node examples/demos/vector-integration-demo.js",
     "debug": "node diagnostics/debug-embeddings.js",
     "diagnose": "node diagnostics/cosine-diagnosis.js",

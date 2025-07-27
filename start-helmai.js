@@ -14,7 +14,7 @@
  */
 
 const { spawn, exec } = require('child_process');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
 class HelmAIInfrastructure {
@@ -110,12 +110,21 @@ class HelmAIInfrastructure {
     }
 
     /**
-     * Start Chroma DB container
+     * Start Chroma DB container with persistent storage
      */
     async startChromaDB() {
-        console.log('🗄️  Starting Chroma DB...');
+        console.log('🗄️  Starting Chroma DB with persistent storage...');
         
         try {
+            // Create persistent data directory
+            const dataDir = path.resolve('./data/chromadb-data');
+            try {
+                await fs.mkdir(dataDir, { recursive: true });
+                console.log(`📁 Created persistent data directory: ${dataDir}`);
+            } catch (error) {
+                console.log(`📁 Using existing data directory: ${dataDir}`);
+            }
+            
             // Stop existing container if running
             try {
                 await this.execCommand(`docker stop ${this.config.chromaContainer} 2>/dev/null || true`);
@@ -128,11 +137,17 @@ class HelmAIInfrastructure {
             console.log('📥 Pulling Chroma DB image...');
             await this.execCommand(`docker pull ${this.config.chromaImage}`);
             
-            // Start container
-            const chromaCmd = `docker run -d --name ${this.config.chromaContainer} -p ${this.config.chromaPort}:8000 ${this.config.chromaImage}`;
+            // Start container with persistent volume
+            const chromaCmd = `docker run -d --name ${this.config.chromaContainer} ` +
+                             `-p ${this.config.chromaPort}:8000 ` +
+                             `-v "${dataDir}:/data" ` +
+                             `-e CHROMA_SERVER_CORS_ALLOW_ORIGINS="*" ` +
+                             `${this.config.chromaImage}`;
+            
+            console.log('🚀 Starting ChromaDB with persistent volume...');
             await this.execCommand(chromaCmd);
             
-            console.log('✅ Chroma DB container started');
+            console.log('✅ Chroma DB container started with persistent storage');
             
             // Wait for container to be ready
             console.log('⏳ Waiting for Chroma DB to be ready...');
@@ -223,15 +238,12 @@ class HelmAIInfrastructure {
     }
 
     /**
-     * Initialize the knowledge base
+     * Initialize the knowledge base (only if empty)
      */
     async initializeKnowledgeBase() {
-        console.log('📚 Initializing knowledge base...');
+        console.log('📚 Checking knowledge base...');
         
         try {
-            // Create knowledge base directly through the API system instead of running helmai-system.js
-            console.log('🔄 Creating production knowledge base...');
-            
             // Import the HelmAI system
             const { HelmAIEmbeddingSystem } = require('./helmai-system');
             
@@ -244,7 +256,23 @@ class HelmAIInfrastructure {
             // Initialize system
             await system.initialize();
             
-            // Create knowledge base with production data
+            // Check if data already exists
+            try {
+                const stats = await system.getStats();
+                const existingCount = stats?.knowledgeBase?.articleCount || 0;
+                
+                if (existingCount > 0) {
+                    console.log(`✅ Knowledge base already exists with ${existingCount} articles`);
+                    console.log('📄 Using persistent data from previous sessions\n');
+                    return;
+                }
+            } catch (error) {
+                console.log('🔍 No existing data found, creating initial knowledge base...');
+            }
+            
+            // Create initial knowledge base only if empty
+            console.log('🔄 Creating initial knowledge base...');
+            
             const airlineKB = [
                 {
                     id: 'booking_001',
@@ -279,7 +307,9 @@ class HelmAIInfrastructure {
             ];
             
             await system.createKnowledgeBase(airlineKB);
-            console.log('✅ Knowledge base initialized in production collection\n');
+            console.log('✅ Initial knowledge base created');
+            console.log('💡 To load your full 420-article dataset, run: npm run import-csv');
+            console.log('   This will permanently add all data to the persistent storage\n');
             
         } catch (error) {
             console.log('⚠️  Knowledge base initialization had issues - API will handle this automatically\n');

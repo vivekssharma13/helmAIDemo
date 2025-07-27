@@ -76,6 +76,10 @@ chroma_data/
 vector_storage/
 embeddings_cache/
 
+# ChromaDB Persistent Storage
+data/chromadb-data/
+**/chromadb-data/
+
 # AI Model Files (Large Files)
 models/
 *.model
