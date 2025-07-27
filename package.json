@@ -1,0 +1,39 @@
+{
+  "name": "helmai-embedding-system",
+  "version": "2.0.0",
+  "description": "HelmAI Vector Embedding System for Airline Customer Service - Semantic search and intent classification with local AI models",
+  "license": "MIT",
+  "author": "HelmAI Team",
+  "type": "commonjs",
+  "main": "helmai-system.js",
+  "scripts": {
+    "start": "node helmai-system.js",
+    "launch": "node start-helmai.js",
+    "infrastructure": "npm run launch",
+    "api": "node src/api/app.js",
+    "server": "npm run api",
+    "demo": "node examples/demos/vector-integration-demo.js",
+    "debug": "node diagnostics/debug-embeddings.js",
+    "diagnose": "node diagnostics/cosine-diagnosis.js",
+    "clean": "node maintenance/cleanup-collections.js",
+    "structure": "node show-structure.js",
+    "test": "npm run debug"
+  },
+  "keywords": [
+    "ai",
+    "embeddings",
+    "vector-database",
+    "semantic-search",
+    "ollama",
+    "chroma",
+    "airline",
+    "customer-service",
+    "intent-classification"
+  ],
+  "dependencies": {
+    "axios": "^1.10.0",
+    "chromadb": "^3.0.10",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

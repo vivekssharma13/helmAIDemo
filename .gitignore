@@ -1,0 +1,193 @@
+# HelmAI Project - Git Ignore File
+# ===================================
+
+# Node.js Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+package-lock.json*
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+*.env
+secrets/
+credentials/
+
+# Runtime & Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime Data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage & Testing
+coverage/
+.nyc_output
+.coverage/
+*.lcov
+.jest/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary Files
+temp/
+tmp/
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+
+# Vector Database & AI Model Data
+data/helmai-knowledge-base.json
+data/*.json
+data/*.csv
+data/*.db
+*.sqlite
+*.sqlite3
+chroma_data/
+vector_storage/
+embeddings_cache/
+
+# AI Model Files (Large Files)
+models/
+*.model
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+
+# Docker & Container Data
+.docker/
+docker-compose.override.yml
+.containerignore
+
+# Build & Distribution
+dist/
+build/
+out/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+
+# Legacy & Archived Code
+legacy/
+archive/
+deprecated/
+old/
+backup/
+
+# Diagnostics & Debug Files
+diagnostics/
+debug/
+*.debug
+debug-*.js
+*-debug.js
+*-diagnosis.js
+
+# Maintenance & Utility Scripts
+maintenance/
+utils/temp/
+scripts/temp/
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Jupyter Notebooks (if any)
+.ipynb_checkpoints/
+*.ipynb
+
+# Python Cache (if using Python tools)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Local Configuration
+config.local.json
+settings.local.json
+.vscode/settings.json
+
+# Generated Documentation
+docs/generated/
+api-docs/
+.docusaurus/
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+chroma.sqlite3
+
+# Large Data Files
+*.json.large
+*.csv.large
+*.txt.large
+data/large/
+
+# Temporary Development Files
+scratch/
+playground/
+test-data/
+experiments/
+
+# Process & Lock Files
+.lock
+*.lock
+.pid
+
+# Error & Crash Reports
+crash-*.log
+error-*.log
+*.crash
+
+# Local Development Overrides
+docker-compose.dev.yml
+docker-compose.local.yml
+.env.dev
+.env.development
+
+# Generated API Documentation
+openapi.json
+swagger.json
+postman_collection.json
+
+# Backup Files
+*.bak
+*.backup
+*~
