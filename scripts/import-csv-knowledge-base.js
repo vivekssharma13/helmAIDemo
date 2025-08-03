@@ -1,42 +1,21 @@
 #!/usr/bin/env node
 
-/**
- * HELMAI KNOWLEDGE BASE CSV IMPORTER
- * 
- * This script reads airline training data from CSV file and imports it 
- * into the HelmAI vector database using the current Mistral model.
- * 
- * Features:
- * - Reads CSV data with intent classification
- * - Batch processing for efficient embedding creation
- * - Progress tracking and error handling
- * - Configurable batch sizes and processing options
- * - Validates data before processing
- * - Creates embeddings using local Mistral model
- */
-
 const fs = require('fs').promises;
 const path = require('path');
 const { HelmAIEmbeddingSystem } = require('../helmai-system.js');
 
-/**
- * Configuration for the import process
- */
 const CONFIG = {
-    csvPath: './data/airline-training-data.csv',
-    batchSize: 10,                    // Process 10 articles at a time
-    model: 'mistral:latest',          // Use your local Mistral model
-    collection: 'helmai-production',  // Target collection name
-    delimiter: ',',                   // CSV delimiter
-    skipHeader: true,                 // Skip the first row (header)
-    validateData: true,               // Validate each entry before processing
-    logProgress: true,                // Show progress during import
-    createBackup: true                // Create backup before import
+    intentsPath: './data/intents',
+    batchSize: 10,
+    model: 'mistral:latest',
+    collection: 'helmai-production',
+    delimiter: ',',
+    skipHeader: true,
+    validateData: true,
+    logProgress: true,
+    createBackup: true
 };
 
-/**
- * CSV Data Validator
- */
 class DataValidator {
     static validateEntry(entry) {
         const required = ['id', 'text', 'intent', 'category', 'priority'];
@@ -46,7 +25,6 @@ class DataValidator {
             return { valid: false, errors: [`Missing required fields: ${missing.join(', ')}`] };
         }
         
-        // Validate text length
         if (entry.text.length < 10) {
             return { valid: false, errors: ['Text must be at least 10 characters long'] };
         }
@@ -63,6 +41,44 @@ class DataValidator {
  * CSV Parser
  */
 class CSVParser {
+    static async parseIntentsFolder(intentsPath) {
+        try {
+            console.log(`📂 Reading intents from: ${intentsPath}`);
+            
+            const intentFolders = await fs.readdir(intentsPath);
+            const allData = [];
+            let totalFiles = 0;
+            
+            for (const folder of intentFolders) {
+                const folderPath = path.join(intentsPath, folder);
+                const folderStat = await fs.stat(folderPath);
+                
+                if (!folderStat.isDirectory()) continue;
+                
+                console.log(`📋 Processing intent folder: ${folder}`);
+                
+                const files = await fs.readdir(folderPath);
+                const csvFiles = files.filter(file => file.endsWith('.csv'));
+                
+                for (const csvFile of csvFiles) {
+                    const csvPath = path.join(folderPath, csvFile);
+                    console.log(`   📄 Reading: ${csvFile}`);
+                    
+                    const csvData = await this.parseCSV(csvPath);
+                    allData.push(...csvData);
+                    totalFiles++;
+                }
+            }
+            
+            console.log(`✅ Processed ${totalFiles} CSV files from ${intentFolders.length} intent folders`);
+            console.log(`📊 Total records loaded: ${allData.length}`);
+            
+            return allData;
+        } catch (error) {
+            throw new Error(`Failed to parse intents folder: ${error.message}`);
+        }
+    }
+    
     static async parseCSV(filePath) {
         try {
             const content = await fs.readFile(filePath, 'utf-8');
@@ -97,7 +113,6 @@ class CSVParser {
                     entry[header.trim()] = values[index] ? values[index].trim().replace(/^"|"$/g, '') : '';
                 });
                 
-                // Validate if enabled
                 if (CONFIG.validateData) {
                     const validation = DataValidator.validateEntry(entry);
                     if (!validation.valid) {
@@ -171,7 +186,6 @@ class KnowledgeBaseImporter {
     async importData(csvData) {
         console.log(`📚 Starting import of ${csvData.length} articles...`);
         
-        // Convert CSV data to knowledge base format
         const knowledgeBase = csvData.map(entry => ({
             id: entry.id,
             text: entry.text,
@@ -185,7 +199,6 @@ class KnowledgeBaseImporter {
         }));
         
         try {
-            // Process in batches
             const batches = this.createBatches(knowledgeBase, CONFIG.batchSize);
             console.log(`📦 Processing ${batches.length} batches of ${CONFIG.batchSize} articles each`);
             
@@ -202,14 +215,12 @@ class KnowledgeBaseImporter {
                         console.log(`✅ Batch ${i + 1} completed. Progress: ${this.processedCount}/${csvData.length} (${percentage}%)`);
                     }
                     
-                    // Small delay between batches to prevent overwhelming the system
                     if (i < batches.length - 1) {
                         await this.delay(1000);
                     }
                 } catch (error) {
                     console.error(`❌ Error processing batch ${i + 1}: ${error.message}`);
                     this.errors.push(`Batch ${i + 1}: ${error.message}`);
-                    // Continue with next batch
                 }
             }
             
@@ -238,7 +249,6 @@ class KnowledgeBaseImporter {
     
     async processBatch(batch, batchNumber) {
         try {
-            // Use the HelmAI system to process the batch directly
             const result = await this.helmAI.createKnowledgeBase(batch);
             
             if (!result.success) {
@@ -287,7 +297,6 @@ class BackupManager {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupPath = `./data/backup-knowledge-base-${timestamp}.json`;
             
-            // This would need to be implemented based on your current knowledge base export functionality
             console.log(`💾 Backup would be created at: ${backupPath}`);
             console.log('ℹ️  Backup functionality can be implemented based on your existing export methods');
             
@@ -306,37 +315,31 @@ async function importCSVToKnowledgeBase() {
     console.log('🎯 === HELMAI CSV KNOWLEDGE BASE IMPORTER ===\n');
     
     try {
-        // Validate CSV file exists
-        const csvPath = path.resolve(CONFIG.csvPath);
+        const intentsPath = path.resolve(CONFIG.intentsPath);
         try {
-            await fs.access(csvPath);
+            await fs.access(intentsPath);
         } catch (error) {
-            throw new Error(`CSV file not found: ${csvPath}`);
+            throw new Error(`Intents folder not found: ${intentsPath}`);
         }
         
-        console.log(`📂 Reading CSV file: ${csvPath}`);
+        console.log(`📂 Reading intents folder: ${intentsPath}`);
         console.log(`🤖 Using model: ${CONFIG.model}`);
         console.log(`🗄️  Target collection: ${CONFIG.collection}`);
         console.log(`📦 Batch size: ${CONFIG.batchSize}\n`);
         
-        // Create backup if enabled
         await BackupManager.createBackup();
         
-        // Parse CSV data
-        const csvData = await CSVParser.parseCSV(csvPath);
+        const csvData = await CSVParser.parseIntentsFolder(intentsPath);
         
         if (csvData.length === 0) {
-            throw new Error('No valid data found in CSV file');
+            throw new Error('No valid data found in intents folder');
         }
         
-        // Initialize importer
         const importer = new KnowledgeBaseImporter();
         await importer.initialize();
         
-        // Import data
         const result = await importer.importData(csvData);
         
-        // Show final stats
         console.log('\n📊 Final System Stats:');
         const stats = await importer.getStats();
         if (stats) {
@@ -345,7 +348,6 @@ async function importCSVToKnowledgeBase() {
             console.log(`   Model: ${stats.model}`);
         }
         
-        // Summary
         console.log('\n🎉 === IMPORT COMPLETE ===');
         console.log(`✅ Successfully imported ${result.processed}/${result.total} articles`);
         console.log(`❌ Errors: ${result.errors}`);
@@ -364,13 +366,11 @@ async function importCSVToKnowledgeBase() {
  * CLI Interface
  */
 if (require.main === module) {
-    // Handle command line arguments
     const args = process.argv.slice(2);
     
-    // Update config based on arguments
     args.forEach(arg => {
-        if (arg.startsWith('--csv=')) {
-            CONFIG.csvPath = arg.split('=')[1];
+        if (arg.startsWith('--intents=')) {
+            CONFIG.intentsPath = arg.split('=')[1];
         } else if (arg.startsWith('--batch-size=')) {
             CONFIG.batchSize = parseInt(arg.split('=')[1]);
         } else if (arg.startsWith('--model=')) {

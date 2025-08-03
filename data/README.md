@@ -1,37 +1,50 @@
-# HelmAI Knowledge Base CSV Training Data
+# HelmAI Knowledge Base Training Data
 
-This directory contains CSV training data and scripts for importing airline customer service data into the HelmAI vector database.
+This directory contains CSV training data organized by intents for the HelmAI vector database.
 
-## 📁 Files Overview
+## 📁 Directory Structure
 
-### Data Files
-- `airline-training-data.csv` - Main training dataset with 420+ airline customer service queries
-- `helmai-knowledge-base.json` - Existing knowledge base (if any)
-- `intent-extractor.txt` - Intent extraction prompts
-
-### Scripts
-- `scripts/import-csv-knowledge-base.js` - Main import script with full configuration
-- `scripts/quick-import.js` - Simple interactive import script  
-- `scripts/analyze-training-data.js` - Data analysis and quality check
-- `scripts/clean-csv.js` - CSV data cleaner (if needed)
+```
+data/
+├── intents/                     # Intent-organized CSV files
+│   ├── flight_booking/         # Flight booking queries
+│   ├── flight_cancellation/    # Cancellation queries  
+│   ├── flight_change/          # Flight change queries
+│   ├── flight_checkin/         # Check-in queries
+│   ├── baggage_inquiry/        # Baggage-related queries
+│   ├── flight_status/          # Status check queries
+│   ├── payment_inquiry/        # Payment questions
+│   ├── seat_selection/         # Seat selection queries
+│   ├── special_assistance/     # Special needs queries
+│   ├── connecting_flights/     # Connection queries
+│   ├── loyalty_program/        # Miles/loyalty queries
+│   ├── travel_documents/       # Document requirements
+│   ├── weather_related/        # Weather delay queries
+│   ├── general_inquiry/        # General questions
+│   └── pricing_inquiry/        # Pricing questions
+├── airline-training-data.csv   # Original consolidated data
+└── README.md                   # This file
+```
 
 ## 📊 Training Data Statistics
 
 - **Total Records**: 420 airline customer service queries
-- **Intent Categories**: 15+ different intents
-- **Main Categories**:
-  - Flight Booking (40 samples)
-  - Flight Changes (40 samples) 
-  - Flight Status (40 samples)
-  - Flight Cancellation (39 samples)
-  - Check-in (39 samples)
-  - Baggage Inquiries (39 samples)
-  - And 9 more categories...
+- **Intent Categories**: 15 different intents  
+- **Format**: Each intent has its own folder with CSV files (max 500 records per file)
 
-- **Priority Distribution**:
-  - High Priority: 137 samples (33%)
-  - Medium Priority: 247 samples (59%)
-  - Low Priority: 24 samples (6%)
+### Intent Distribution
+- Flight Booking: 40 samples (10%)
+- Flight Cancellation: 40 samples (10%) 
+- Flight Changes: 40 samples (10%)
+- Flight Status: 40 samples (10%)
+- Flight Check-in: 40 samples (10%)
+- Baggage Inquiry: 40 samples (10%)
+- Other intents: 20 samples each (5% each)
+
+### Priority Distribution
+- High Priority: 147 samples (35%)
+- Medium Priority: 249 samples (59%)
+- Low Priority: 24 samples (6%)
 
 ## 🚀 Quick Start
 
@@ -40,14 +53,14 @@ This directory contains CSV training data and scripts for importing airline cust
 # 1. Start ChromaDB
 docker run -d --name chroma-db -p 8000:8000 chromadb/chroma
 
-# 2. Ensure Ollama is running with Mistral model
-ollama list  # Should show mistral:latest
+# 2. Ensure Ollama is running with your model
+ollama list  # Should show mistral:latest or mixtral:latest
 
 # 3. Make sure HelmAI API is running (optional)
 node src/api/app.js
 ```
 
-### Import Data
+### Import Data from Intents Folder
 
 #### Option 1: Interactive Import (Recommended)
 ```bash
