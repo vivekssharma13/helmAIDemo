@@ -62,6 +62,9 @@ class HelmAIAPIServer {
         // Category search endpoint
         this.app.post('/api/search/category', this.handleCategorySearch.bind(this));
         
+        // Flight booking extraction endpoint
+        this.app.post('/api/booking/extract', this.handleFlightBookingExtraction.bind(this));
+        
         // Knowledge base management
         this.app.post('/api/knowledge-base/create', this.handleCreateKnowledgeBase.bind(this));
         this.app.get('/api/knowledge-base/stats', this.handleGetStats.bind(this));
@@ -81,6 +84,7 @@ class HelmAIAPIServer {
                 availableEndpoints: [
                     'POST /api/search',
                     'POST /api/search/category',
+                    'POST /api/booking/extract',
                     'GET /api/health',
                     'GET /api/system/status'
                 ]
@@ -178,6 +182,141 @@ class HelmAIAPIServer {
         }
     }
     
+    /**
+     * Flight booking information extraction endpoint
+     */
+    async handleFlightBookingExtraction(req, res) {
+        try {
+            const { query } = req.body;
+            
+            // Validate input
+            if (!query || typeof query !== 'string' || query.trim().length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Query is required and must be a non-empty string'
+                });
+            }
+            
+            await this.ensureInitialized();
+            
+            console.log(`🎯 Flight Booking Extraction: "${query}"`);
+            
+            // Step 1: Check if the query is about flight booking using intent detection
+            const intentResults = await this.helmAI.searchForAnswer(
+                query.trim(),
+                1,
+                0.3
+            );
+            
+            // Check if the top result indicates flight_booking intent
+            const isFlightBooking = intentResults.length > 0 && 
+                                  intentResults[0].intent === 'flight_booking' &&
+                                  intentResults[0].similarity > 0.5;
+            
+            if (!isFlightBooking) {
+                return res.json({
+                    success: true,
+                    is_flight_booking: false,
+                    message: 'Query does not appear to be related to flight booking',
+                    query: query.trim(),
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            console.log(`✈️ Confirmed flight booking intent, extracting information...`);
+            
+            // Step 2: Extract flight booking information using LLM
+            const extractionResult = await this.extractFlightBookingInfo(query.trim());
+            
+            const response = {
+                success: true,
+                is_flight_booking: true,
+                query: query.trim(),
+                extraction: extractionResult,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log(`✅ Flight booking extraction completed`);
+            res.json(response);
+            
+        } catch (error) {
+            console.error('❌ Flight Booking Extraction Error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Flight booking extraction failed',
+                message: error.message,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+
+    /**
+     * Extract flight booking information using LLM
+     */
+    async extractFlightBookingInfo(query) {
+        const fs = require('fs').promises;
+        const path = require('path');
+        
+        try {
+            // Read the flight booking extraction prompt
+            const promptPath = path.join(process.cwd(), 'prompts', 'flight-booking-extractor.txt');
+            const promptTemplate = await fs.readFile(promptPath, 'utf8');
+            
+            // Create the full prompt with the user query
+            const fullPrompt = `${promptTemplate}\n\nUser Query: "${query}"`;
+            
+            // Call the LLM to extract information
+            const response = await this.helmAI.generateResponse(fullPrompt);
+            
+            // Parse the JSON response
+            let extractedData;
+            try {
+                // Clean the response to extract JSON
+                let cleanResponse = response.trim();
+                
+                // Look for JSON object in the response
+                const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    cleanResponse = jsonMatch[0];
+                }
+                
+                extractedData = JSON.parse(cleanResponse);
+                
+                // Validate the structure
+                if (!extractedData.extracted_info || !extractedData.missing_fields || 
+                    extractedData.confidence === undefined || !extractedData.tts_response) {
+                    throw new Error('Invalid response structure');
+                }
+                
+            } catch (parseError) {
+                console.error('❌ Failed to parse LLM response:', parseError);
+                console.error('Raw response:', response);
+                
+                // Return a fallback response
+                extractedData = {
+                    extracted_info: {
+                        trip_type: null,
+                        passengers: { adults: null, children: null, infants: null },
+                        origin: null,
+                        destination: null,
+                        departure_date: null,
+                        return_date: null,
+                        class: null
+                    },
+                    missing_fields: ["trip_type", "passengers", "origin", "destination", "departure_date", "class"],
+                    confidence: 0.1,
+                    tts_response: "I understand you want to book a flight, but I need more details. Could you please provide your departure city, destination, travel dates, and number of passengers?"
+                };
+            }
+            
+            return extractedData;
+            
+        } catch (error) {
+            console.error('❌ Error in extractFlightBookingInfo:', error);
+            throw error;
+        }
+    }
+
     /**
      * Health check endpoint
      */
@@ -374,6 +513,7 @@ class HelmAIAPIServer {
                         endpoints: [
                             'POST /api/search',
                             'POST /api/search/category',
+                            'POST /api/booking/extract',
                             'GET /api/health',
                             'GET /api/system/status',
                             'POST /api/knowledge-base/create',
@@ -436,6 +576,7 @@ class HelmAIAPIServer {
                 console.log('📡 Available endpoints:');
                 console.log(`   POST http://localhost:${this.port}/api/search - Main search endpoint`);
                 console.log(`   POST http://localhost:${this.port}/api/search/category - Category search`);
+                console.log(`   POST http://localhost:${this.port}/api/booking/extract - Flight booking extraction`);
                 console.log(`   GET  http://localhost:${this.port}/api/health - Health check`);
                 console.log(`   GET  http://localhost:${this.port}/api/system/status - System status`);
             });

@@ -99,6 +99,39 @@ class HelmAIEmbeddingSystem {
     }
     
     /**
+     * Generate a response using the LLM
+     */
+    async generateResponse(prompt) {
+        await this.initialize();
+        
+        console.log(`🤖 Generating LLM response...`);
+        
+        try {
+            const axios = require('axios');
+            const ollamaUrl = 'http://localhost:11434';
+            
+            const response = await axios.post(
+                `${ollamaUrl}/api/generate`,
+                {
+                    model: this.model,
+                    prompt: prompt,
+                    stream: false
+                },
+                {
+                    timeout: 60000,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+            
+            return response.data.response;
+            
+        } catch (error) {
+            console.error('❌ LLM generation failed:', error.message);
+            throw new Error(`Failed to generate response: ${error.message}`);
+        }
+    }
+    
+    /**
      * Search within a specific category
      */
     async searchByCategory(query, category, maxResults = 3) {
