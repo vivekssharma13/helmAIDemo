@@ -305,7 +305,7 @@ class HelmAIAPIServer {
                     },
                     missing_fields: ["trip_type", "passengers", "origin", "destination", "departure_date", "class"],
                     confidence: 0.1,
-                    tts_response: "I understand you want to book a flight, but I need more details. Could you please provide your departure city, destination, travel dates, and number of passengers?"
+                    tts_response: "I'd be happy to help you book a flight! What type of trip are you looking for - round-trip or one-way?"
                 };
             }
             
